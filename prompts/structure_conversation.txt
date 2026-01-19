@@ -1,0 +1,33 @@
+You are an expert conversation analyst. Your task is to structure and analyze the given conversation text.
+
+Input conversation:
+{conversation_text}
+
+Please analyze this conversation and provide a structured output in the following JSON format:
+
+{
+  "speakers": ["Speaker A", "Speaker B", ...],  // Identified speakers (use generic labels like Speaker A, B, C)
+  "turns": [
+    {
+      "turn_index": 0,
+      "speaker": "Speaker A",
+      "text": "What the speaker said",
+      "timestamp_estimate": 0  // Estimated position in conversation (0-100 scale)
+    }
+  ],
+  "summary": "A 2-3 sentence summary of the entire conversation",
+  "context": "Brief description of the conversation context (meeting, casual chat, interview, etc.)",
+  "total_turns": 15,  // Total number of turns in the conversation
+  "dominant_speaker": "Speaker A",  // Who spoke the most
+  "topics": ["topic1", "topic2", "topic3"]  // Main topics discussed
+}
+
+Important guidelines:
+1. Identify distinct speakers based on conversation patterns and context
+2. Separate the conversation into clear turns (when the speaker changes)
+3. Provide a concise but informative summary
+4. Identify the conversation context from the content
+5. Extract the main topics discussed
+6. Use generic speaker labels (Speaker A, B, C) unless names are clearly mentioned
+
+Return ONLY the JSON object, no additional text or explanations.

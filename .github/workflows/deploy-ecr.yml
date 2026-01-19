@@ -1,0 +1,137 @@
+name: Deploy to ECR and EC2
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  AWS_REGION: ap-southeast-2
+  ECR_REPOSITORY: watchme-punchline
+  EC2_HOST: 3.24.16.82
+  EC2_USER: ubuntu
+  SERVICE_NAME: punchline-api
+  CONTAINER_PORT: 8060
+  # Environment variables from GitHub Secrets
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+  GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build Docker image for ARM64
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker buildx create --use --name multiarch-builder || true
+        docker buildx build \
+          --platform linux/arm64 \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+          -f Dockerfile.prod \
+          --push .
+
+    - name: Deploy to EC2
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Setup SSH key
+        echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > private_key.pem
+        chmod 600 private_key.pem
+
+        # Deploy to EC2
+        ssh -o StrictHostKeyChecking=no -i private_key.pem ${EC2_USER}@${EC2_HOST} << ENDSSH
+          # Navigate to service directory
+          mkdir -p /home/ubuntu/${SERVICE_NAME}
+          cd /home/ubuntu/${SERVICE_NAME}
+
+          # Create .env file
+          cat > .env << EOF
+        OPENAI_API_KEY=${OPENAI_API_KEY}
+        GROQ_API_KEY=${GROQ_API_KEY}
+        SUPABASE_URL=${SUPABASE_URL}
+        SUPABASE_KEY=${SUPABASE_KEY}
+        LLM_PROVIDER=openai
+        LLM_MODEL=gpt-5-nano
+        EOF
+
+          # Create docker-compose.prod.yml
+          cat > docker-compose.prod.yml << 'EOF'
+        version: '3.8'
+
+        services:
+          punchline-api:
+            image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+            container_name: punchline-api
+            ports:
+              - "${CONTAINER_PORT}:${CONTAINER_PORT}"
+            environment:
+              - OPENAI_API_KEY=\${OPENAI_API_KEY}
+              - GROQ_API_KEY=\${GROQ_API_KEY}
+              - SUPABASE_URL=\${SUPABASE_URL}
+              - SUPABASE_KEY=\${SUPABASE_KEY}
+              - LLM_PROVIDER=\${LLM_PROVIDER:-openai}
+              - LLM_MODEL=\${LLM_MODEL:-gpt-5-nano}
+            restart: always
+            networks:
+              - watchme-network
+            healthcheck:
+              test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:${CONTAINER_PORT}/health').raise_for_status()"]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+              start_period: 40s
+
+        networks:
+          watchme-network:
+            external: true
+        EOF
+
+          # Login to ECR
+          aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+          # Pull and run the new image
+          docker-compose -f docker-compose.prod.yml pull
+          docker-compose -f docker-compose.prod.yml down || true
+          docker-compose -f docker-compose.prod.yml up -d
+
+          # Wait for service to be healthy
+          sleep 10
+
+          # Check if container is running
+          if docker ps | grep -q ${SERVICE_NAME}; then
+            echo "Deployment successful!"
+            docker logs ${SERVICE_NAME} --tail 20
+          else
+            echo "Deployment failed!"
+            docker logs ${SERVICE_NAME} --tail 50
+            exit 1
+          fi
+        ENDSSH
+
+        # Cleanup
+        rm -f private_key.pem
+
+    - name: Verify deployment
+      run: |
+        sleep 5
+        curl -f https://api.hey-watch.me/punchline/health || echo "Warning: Health check via public URL failed, but container might still be starting"

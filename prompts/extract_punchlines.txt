@@ -1,0 +1,61 @@
+You are an expert at identifying memorable, funny, and impactful quotes from conversations.
+
+Structured conversation:
+{structured_conversation}
+
+Your task is to extract the most memorable "punchlines" from this conversation. A punchline can be:
+- A witty or humorous remark
+- An unexpected or surprising statement
+- A profound or insightful comment
+- An emotional or touching moment
+- A clever play on words or joke
+- A memorable quote that stands out
+
+Please analyze the conversation and extract the TOP 5 punchlines, providing the following information for each:
+
+{
+  "punchlines": [
+    {
+      "rank": 1,
+      "text": "The exact quote/punchline",
+      "speaker": "Speaker A",
+      "context_before": "Brief context leading to this punchline (1-2 sentences)",
+      "humor_score": 85,  // 0-100: How funny/witty is this? (0 = not funny at all, 100 = hilarious)
+      "memorability_score": 90,  // 0-100: How memorable/impactful is this? (0 = forgettable, 100 = unforgettable)
+      "category": "witty_remark",  // One of: witty_remark, unexpected_twist, insightful_comment, emotional_moment, hilarious_joke
+      "reasoning": "Why this was selected as a punchline (1-2 sentences)"
+    }
+  ],
+  "analysis_summary": "Brief overall analysis of the conversation's humor and memorable moments (2-3 sentences)"
+}
+
+Evaluation criteria:
+1. **Humor Score (0-100)**:
+   - 0-20: Not funny at all, serious statement
+   - 21-40: Slightly amusing, mild humor
+   - 41-60: Moderately funny, good humor
+   - 61-80: Very funny, great wit
+   - 81-100: Hilarious, exceptional humor
+
+2. **Memorability Score (0-100)**:
+   - 0-20: Completely forgettable
+   - 21-40: Somewhat memorable
+   - 41-60: Moderately memorable
+   - 61-80: Very memorable
+   - 81-100: Extremely memorable, quotable
+
+3. **Categories**:
+   - witty_remark: Quick, clever responses or observations
+   - unexpected_twist: Surprising turns in the conversation
+   - insightful_comment: Deep, thoughtful observations
+   - emotional_moment: Touching or powerful emotional expressions
+   - hilarious_joke: Obvious jokes or humorous stories
+
+Selection guidelines:
+- Prioritize genuinely funny or impactful moments
+- Consider both humor and memorability (weighted: Humor × 0.6 + Memorability × 0.4)
+- Ensure variety in categories if possible
+- Extract exact quotes, not paraphrases
+- Provide enough context for understanding
+
+Return ONLY the JSON object, no additional text or explanations.
