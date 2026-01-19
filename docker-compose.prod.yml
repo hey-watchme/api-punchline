@@ -2,22 +2,17 @@ version: '3.8'
 
 services:
   punchline-api:
-    image: 533267128891.dkr.ecr.ap-southeast-2.amazonaws.com/watchme-punchline:latest
+    image: 754724220380.dkr.ecr.ap-southeast-2.amazonaws.com/watchme-punchline:latest
     container_name: punchline-api
     ports:
       - "8060:8060"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
-      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
-      - LLM_MODEL=${LLM_MODEL:-gpt-5-nano}
+    env_file:
+      - .env
     restart: always
     networks:
       - watchme-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8060/health').raise_for_status()"]
+      test: ["CMD", "curl", "-f", "http://localhost:8060/health"]
       interval: 30s
       timeout: 10s
       retries: 3
