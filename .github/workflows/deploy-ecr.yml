@@ -122,6 +122,7 @@ jobs:
         GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        LLM_PRESET: ${{ secrets.LLM_PRESET }}
       run: |
         ssh ubuntu@3.24.16.82 << ENDSSH
           cd /home/ubuntu/punchline-api
@@ -129,6 +130,7 @@ jobs:
           echo "GROQ_API_KEY=${GROQ_API_KEY}" >> .env
           echo "SUPABASE_URL=${SUPABASE_URL}" >> .env
           echo "SUPABASE_KEY=${SUPABASE_KEY}" >> .env
+          echo "LLM_PRESET=${LLM_PRESET}" >> .env
           echo "✅ .env file created/updated successfully"
         ENDSSH
 
@@ -188,7 +190,7 @@ jobs:
         echo "📦 Service: ${{ env.SERVICE_NAME }}"
         echo "🌐 URL: https://api.hey-watch.me/punchline/"
         echo "🏷️ Version: ${{ github.sha }}"
-        echo "🤖 LLM Provider: OpenAI (gpt-5-nano)"
+        echo "🤖 LLM Preset: ${{ secrets.LLM_PRESET }}"
 
     # Step 10: Deployment failure notification
     - name: Deployment Failure Notification

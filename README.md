@@ -188,14 +188,51 @@ docker logs punchline-api --tail 100 -f
 
 ## 環境変数
 
-必須環境変数：
+### 必須環境変数
 
 - `OPENAI_API_KEY`: OpenAI APIキー
-- `GROQ_API_KEY`: Groq APIキー（オプション）
+- `GROQ_API_KEY`: Groq APIキー（Groq使用時）
 - `SUPABASE_URL`: SupabaseプロジェクトURL
 - `SUPABASE_KEY`: Supabase Anonキー
-- `LLM_PROVIDER`: 使用プロバイダー（openai/groq）
-- `LLM_MODEL`: 使用モデル名
+
+### LLMモデル切り替え
+
+**方法1: プリセット使用（推奨）**
+
+```bash
+# .env ファイルに設定
+LLM_PRESET=gpt-4.1
+```
+
+利用可能なプリセット:
+- `gpt-4.1` - GPT-4.1（最新）
+- `gpt-5-nano` - GPT-5 Nano（軽量・高速）
+- `gpt-4o` - GPT-4 Optimized
+- `gpt-4o-mini` - GPT-4 Mini
+- `o1` - O1（推論特化）
+- `o1-mini` - O1 Mini
+- `llama-3.3-70b` - Llama 3.3 70B（Groq）
+- `llama-3.1-8b` - Llama 3.1 8B（Groq・高速）
+- `gpt-oss-120b` - GPT OSS 120B（Groq・推論）
+
+**方法2: 直接指定**
+
+```bash
+# .env ファイルに設定
+LLM_PROVIDER=openai
+LLM_MODEL=gpt-4.1
+LLM_REASONING_EFFORT=medium  # Groq推論モデルのみ
+LLM_MAX_TOKENS=8192
+```
+
+**GitHub Secretsでの設定（本番環境）**
+
+```bash
+# GitHub Secrets に追加
+LLM_PRESET=gpt-4.1
+```
+
+モデル切り替え後、コンテナ再起動のみで反映（コード変更不要）
 
 ## パンチライン評価基準
 
@@ -222,12 +259,17 @@ docker logs punchline-api --tail 100 -f
 
 ## トラブルシューティング
 
-### LLMプロバイダー切り替え
+### LLMモデル切り替えが反映されない
 
-```python
-# llm_providers.py を編集
-CURRENT_PROVIDER = "groq"  # openai → groq
-CURRENT_MODEL = "llama-3.3-70b-versatile"
+```bash
+# EC2上でコンテナ再起動
+ssh -i ~/watchme-key.pem ubuntu@3.24.16.82
+cd /home/ubuntu/punchline-api
+docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.prod.yml up -d
+
+# ログでモデル確認
+docker logs punchline-api --tail 50 | grep "Using LLM"
 ```
 
 ### エラー対応

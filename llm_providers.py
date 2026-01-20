@@ -13,12 +13,40 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 # ==========================================
 # LLM Provider Configuration
 # ==========================================
-# Change this line to switch providers
-CURRENT_PROVIDER = os.getenv("LLM_PROVIDER", "openai")  # "openai" or "groq"
-CURRENT_MODEL = os.getenv("LLM_MODEL", "gpt-5-nano")
-# Settings for Groq reasoning models (only used for models starting with "openai/")
-CURRENT_REASONING_EFFORT = "medium"  # "low", "medium", "high"
-CURRENT_MAX_COMPLETION_TOKENS = 8192
+# Model Presets (for easy switching)
+MODEL_PRESETS = {
+    # OpenAI Models
+    "gpt-4.1": {"provider": "openai", "model": "gpt-4.1"},
+    "gpt-5-nano": {"provider": "openai", "model": "gpt-5-nano"},
+    "gpt-4o": {"provider": "openai", "model": "gpt-4o"},
+    "gpt-4o-mini": {"provider": "openai", "model": "gpt-4o-mini"},
+    "o1": {"provider": "openai", "model": "o1"},
+    "o1-mini": {"provider": "openai", "model": "o1-mini"},
+
+    # Groq Models
+    "llama-3.3-70b": {"provider": "groq", "model": "llama-3.3-70b-versatile"},
+    "llama-3.1-8b": {"provider": "groq", "model": "llama-3.1-8b-instant"},
+    "gpt-oss-120b": {"provider": "groq", "model": "openai/gpt-oss-120b", "reasoning_effort": "medium"},
+}
+
+# Configuration from environment variables
+# Option 1: Use preset name (e.g., LLM_PRESET=gpt-4.1)
+# Option 2: Direct specification (e.g., LLM_PROVIDER=openai, LLM_MODEL=gpt-4.1)
+LLM_PRESET = os.getenv("LLM_PRESET", None)
+
+if LLM_PRESET and LLM_PRESET in MODEL_PRESETS:
+    # Use preset configuration
+    preset = MODEL_PRESETS[LLM_PRESET]
+    CURRENT_PROVIDER = preset["provider"]
+    CURRENT_MODEL = preset["model"]
+    CURRENT_REASONING_EFFORT = preset.get("reasoning_effort", "medium")
+else:
+    # Use direct specification
+    CURRENT_PROVIDER = os.getenv("LLM_PROVIDER", "openai")
+    CURRENT_MODEL = os.getenv("LLM_MODEL", "gpt-5-nano")
+    CURRENT_REASONING_EFFORT = os.getenv("LLM_REASONING_EFFORT", "medium")
+
+CURRENT_MAX_COMPLETION_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "8192"))
 # ==========================================
 
 
