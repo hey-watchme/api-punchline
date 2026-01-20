@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   punchline-api:
-    image: 754724220380.dkr.ecr.ap-southeast-2.amazonaws.com/watchme-punchline:latest
+    image: 754724220380.dkr.ecr.ap-southeast-2.amazonaws.com/punchline_api_profiler:latest
     container_name: punchline-api
     ports:
       - "8060:8060"
