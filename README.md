@@ -243,6 +243,23 @@ CURRENT_MODEL = "llama-3.3-70b-versatile"
 3. **Phase 4**: リアルタイム分析
 4. **Phase 5**: パーソナライゼーション
 
+## 更新履歴
+
+### 2026-01-20 - v0.1.0（POC初回リリース）
+- **プロジェクト初期構築**: PUNCHLINE API POC完成
+- **2段階パイプライン実装**: 会話構造化 → パンチライン抽出
+- **LLM統合**: OpenAI GPT-5 nano対応
+- **Supabaseデータベース**: 3テーブル構成（requests, structured_conversations, results）
+- **CI/CD構築**: GitHub Actions → AWS ECR → EC2自動デプロイ
+- **Docker化**: ARM64対応、ポート8060で稼働
+- **Nginx設定**: `https://api.hey-watch.me/punchline/` で公開
+- **初回テスト成功**:
+  - 処理時間: 約122秒（2段階LLM処理）
+  - 発話者識別・ターン分割正常動作
+  - ユーモアスコアリング（0-100）実装
+  - Top 5パンチライン抽出成功
+- **WatchMeインフラ活用**: EC2、ECR、Supabaseを共用
+
 ## ライセンス
 
 Private - WatchMe Project
