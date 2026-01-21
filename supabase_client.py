@@ -269,3 +269,52 @@ class SupabaseClient:
         except Exception as e:
             print(f"Error fetching user history: {str(e)}")
             raise e
+
+    async def get_watchme_transcription(
+        self,
+        device_id: str,
+        local_date: str,
+        local_time: Optional[str] = None
+    ) -> Optional[str]:
+        """
+        Get transcription from WatchMe spot_features table
+
+        Args:
+            device_id: Device ID (UUID)
+            local_date: Local date (YYYY-MM-DD)
+            local_time: Optional local time to match specific recording
+
+        Returns:
+            Optional[str]: vibe_transcriber_result text or None if not found
+        """
+        try:
+            # Start with base query
+            query = self.client.table('spot_features').select(
+                'vibe_transcriber_result, local_time, recorded_at'
+            ).eq(
+                'device_id', device_id
+            ).eq(
+                'local_date', local_date
+            )
+
+            # Add local_time filter if provided
+            if local_time:
+                query = query.eq('local_time', local_time)
+
+            # Order by recorded_at to get most recent if multiple matches
+            query = query.order('recorded_at', desc=True).limit(1)
+
+            response = query.execute()
+
+            if response.data and len(response.data) > 0:
+                transcription = response.data[0].get('vibe_transcriber_result')
+                local_time_found = response.data[0].get('local_time', 'N/A')
+                print(f"Found transcription for device {device_id} on {local_date} at {local_time_found}")
+                return transcription
+            else:
+                print(f"No transcription found for device {device_id} on {local_date}")
+                return None
+
+        except Exception as e:
+            print(f"Error fetching WatchMe transcription: {str(e)}")
+            raise e

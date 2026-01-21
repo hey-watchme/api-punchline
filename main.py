@@ -59,6 +59,14 @@ class PunchlineExtractionRequest(BaseModel):
     context: Optional[Dict[str, Any]] = None
 
 
+class WatchMeExtractionRequest(BaseModel):
+    """Request model for extracting punchlines from WatchMe data"""
+    device_id: str
+    local_date: str
+    local_time: Optional[str] = None
+    user_id: Optional[str] = None
+
+
 class PunchlineResponse(BaseModel):
     """Individual punchline response"""
     rank: int
@@ -374,6 +382,132 @@ async def get_user_history(user_id: str, limit: int = 10):
 
     except Exception as e:
         print(f"Error in get_user_history: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
+
+
+@app.post("/extract-from-watchme", response_model=ExtractionResponse)
+async def extract_from_watchme(request: WatchMeExtractionRequest):
+    """
+    Extract punchlines from WatchMe spot_features transcription data
+
+    This endpoint:
+    1. Fetches transcription from WatchMe spot_features table
+    2. Uses existing pipeline to structure and extract punchlines
+    3. Saves results to database
+
+    Args:
+        request: Contains device_id, local_date, and optional local_time
+
+    Returns:
+        Complete extraction response with punchlines
+    """
+    start_time = time.time()
+    request_id = str(uuid.uuid4())
+
+    try:
+        # Initialize Supabase if needed
+        db = get_supabase_client()
+
+        # Fetch transcription from WatchMe spot_features
+        print(f"Fetching WatchMe transcription for device {request.device_id} on {request.local_date}")
+        transcription = await db.get_watchme_transcription(
+            device_id=request.device_id,
+            local_date=request.local_date,
+            local_time=request.local_time
+        )
+
+        if not transcription:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No transcription found for device {request.device_id} on {request.local_date}"
+            )
+
+        # Save initial request to database
+        context_data = {
+            "source": "watchme_spot_features",
+            "device_id": request.device_id,
+            "local_date": request.local_date,
+            "local_time": request.local_time
+        }
+
+        await db.save_punchline_request(
+            request_id=request_id,
+            conversation_text=transcription,
+            user_id=request.user_id,
+            context_data=context_data
+        )
+
+        # Pipeline 1: Structure conversation
+        print(f"Starting Pipeline 1: Structure conversation for request {request_id}")
+        structured_conversation = await structure_conversation(transcription)
+
+        # Check for processing errors
+        if "processing_error" in structured_conversation:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to structure conversation: {structured_conversation.get('processing_error')}"
+            )
+
+        # Save structured conversation to database
+        await db.save_structured_conversation(
+            request_id=request_id,
+            structured_result=structured_conversation,
+            speakers=structured_conversation.get('speakers', []),
+            turn_count=structured_conversation.get('total_turns', 0),
+            summary=structured_conversation.get('summary', '')
+        )
+
+        # Pipeline 2: Extract punchlines
+        print(f"Starting Pipeline 2: Extract punchlines for request {request_id}")
+        punchlines_result = await extract_punchlines(structured_conversation)
+
+        # Check for processing errors
+        if "processing_error" in punchlines_result:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to extract punchlines: {punchlines_result.get('processing_error')}"
+            )
+
+        # Calculate processing time
+        processing_time_ms = int((time.time() - start_time) * 1000)
+
+        # Prepare metadata
+        metadata = {
+            "source": "watchme_spot_features",
+            "device_id": request.device_id,
+            "local_date": request.local_date,
+            "local_time": request.local_time,
+            "total_punchlines": len(punchlines_result.get('punchlines', [])),
+            "processing_time_ms": processing_time_ms,
+            "model_used": f"{CURRENT_PROVIDER}/{CURRENT_MODEL}",
+            "conversation_length": len(transcription),
+            "turn_count": structured_conversation.get('total_turns', 0)
+        }
+
+        # Save punchline results to database
+        await db.save_punchline_results(
+            request_id=request_id,
+            punchlines=punchlines_result.get('punchlines', []),
+            metadata=metadata,
+            llm_model=f"{CURRENT_PROVIDER}/{CURRENT_MODEL}"
+        )
+
+        # Return complete response
+        return ExtractionResponse(
+            status="success",
+            request_id=request_id,
+            structured_conversation=structured_conversation,
+            punchlines=punchlines_result.get('punchlines', []),
+            metadata=metadata
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in extract_from_watchme: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error: {str(e)}"
