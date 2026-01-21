@@ -106,6 +106,80 @@ GET /extract/{request_id}
 GET /history?user_id={user_id}&limit=10
 ```
 
+### Extract from WatchMe Data (POC検証用)
+```bash
+POST /extract-from-watchme
+
+# Request Body
+{
+  "device_id": "5638e419-67d1-457b-8415-29f5f0a4ef98",
+  "local_date": "2026-01-21",
+  "local_time": "2026-01-21 08:57:05.078"  # オプション
+}
+
+# Response
+{
+  "status": "success",
+  "request_id": "uuid",
+  "structured_conversation": {
+    "speakers": ["Speaker A", "Speaker B"],  # LLMが文脈から推測
+    "turns": [...],
+    "summary": "会話の要約"
+  },
+  "punchlines": [...],
+  "metadata": {
+    "source": "watchme_spot_features",
+    "device_id": "...",
+    "local_date": "...",
+    "processing_time_ms": 36000
+  }
+}
+```
+
+## WatchMeデータを使ったテスト（POC検証）
+
+### 概要
+PUNCHLINEサービスの価値検証のため、WatchMeの既存トランスクリプションデータ（spot_featuresテーブル）を活用できます。新規録音不要で、豊富な実データでテストが可能です。
+
+### テスト方法
+
+1. **基本的なテスト（device_id + local_dateのみ）**
+```bash
+curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
+  -H "Content-Type: application/json" \
+  -d '{
+    "device_id": "5638e419-67d1-457b-8415-29f5f0a4ef98",
+    "local_date": "2026-01-21"
+  }'
+```
+
+2. **特定の録音を指定（local_time付き）**
+```bash
+curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
+  -H "Content-Type: application/json" \
+  -d '{
+    "device_id": "5638e419-67d1-457b-8415-29f5f0a4ef98",
+    "local_date": "2026-01-21",
+    "local_time": "2026-01-21 08:57:05.078"
+  }'
+```
+
+### データフロー
+1. spot_featuresテーブルから`vibe_transcriber_result`を取得
+2. Pipeline 1: 会話構造化（話者分離、ターン分割）
+3. Pipeline 2: パンチライン抽出（スコアリング、カテゴリ分類）
+4. 結果をpunchline_requestsテーブルに保存
+
+### 注意事項
+- **話者分離（ダイアライゼーション）について**
+  - WatchMeのトランスクリプションには話者情報が含まれていません
+  - LLMが文脈・内容から話者交代を推測して分離します
+  - 実際の話者とは異なる可能性があります
+- **local_time省略時**
+  - その日の最新の録音データを取得します
+- **処理時間**
+  - 2段階のLLM処理のため、30-40秒程度かかります
+
 ## ローカル開発
 
 ### セットアップ
@@ -197,6 +271,8 @@ docker logs punchline-api --tail 100 -f
 
 ### LLMモデル切り替え
 
+**現在の本番設定**: `GPT-4.1` (OpenAI)
+
 **方法1: プリセット使用（推奨）**
 
 ```bash
@@ -205,7 +281,7 @@ LLM_PRESET=gpt-4.1
 ```
 
 利用可能なプリセット:
-- `gpt-4.1` - GPT-4.1（最新）
+- `gpt-4.1` - GPT-4.1（現在の本番設定）
 - `gpt-5-nano` - GPT-5 Nano（軽量・高速）
 - `gpt-4o` - GPT-4 Optimized
 - `gpt-4o-mini` - GPT-4 Mini
@@ -291,10 +367,20 @@ docker logs punchline-api --tail 50 | grep "Using LLM"
 
 ## 更新履歴
 
+### 2026-01-21 - v0.1.1（WatchMeデータ連携）
+- **WatchMe連携機能追加**: `/extract-from-watchme` エンドポイント実装
+- **spot_featuresテーブル統合**: device_id + local_dateでトランスクリプション取得
+- **話者分離機能**: LLMによる文脈ベースの話者推測（ダイアライゼーション）
+- **本番環境テスト成功**:
+  - 処理時間: 約36秒（改善）
+  - LLMモデル: GPT-4.1に更新
+  - 実データでのパンチライン抽出確認
+- **POC検証環境構築**: 新規録音不要でテスト可能に
+
 ### 2026-01-20 - v0.1.0（POC初回リリース）
 - **プロジェクト初期構築**: PUNCHLINE API POC完成
 - **2段階パイプライン実装**: 会話構造化 → パンチライン抽出
-- **LLM統合**: OpenAI GPT-5 nano対応
+- **LLM統合**: OpenAI GPT-4.1対応
 - **Supabaseデータベース**: 3テーブル構成（requests, structured_conversations, results）
 - **CI/CD構築**: GitHub Actions → AWS ECR → EC2自動デプロイ
 - **Docker化**: ARM64対応、ポート8060で稼働
