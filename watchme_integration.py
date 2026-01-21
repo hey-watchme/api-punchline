@@ -156,8 +156,14 @@ class WatchMeIntegration:
         session_count = 0
 
         for record in sorted_records:
-            # Parse timestamp
-            timestamp = datetime.fromisoformat(record['recorded_at'].replace('+00', ''))
+            # Parse timestamp - handle various ISO format variations
+            ts_str = record['recorded_at']
+            # Clean up malformed timezone formats
+            ts_str = ts_str.replace('+00:00', '+00:00').replace('.87:00', '+00:00')
+            # Remove timezone for simple parsing
+            if '+' in ts_str:
+                ts_str = ts_str.split('+')[0]
+            timestamp = datetime.fromisoformat(ts_str)
 
             # Check if this starts a new session
             if last_timestamp and (timestamp - last_timestamp).seconds > session_gap_minutes * 60:
