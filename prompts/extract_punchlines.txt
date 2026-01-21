@@ -13,20 +13,22 @@ Your task is to extract the most memorable "punchlines" from this conversation. 
 
 Please analyze the conversation and extract the TOP 5 punchlines, providing the following information for each:
 
+IMPORTANT: For Japanese conversations, provide "context_before" and "reasoning" in Japanese. Keep field names in English.
+
 {
   "punchlines": [
     {
       "rank": 1,
-      "text": "The exact quote/punchline",
+      "text": "The exact quote/punchline (in original language)",
       "speaker": "Speaker A",
-      "context_before": "Brief context leading to this punchline (1-2 sentences)",
+      "context_before": "Brief context leading to this punchline (1-2 sentences) / 日本語の会話の場合は日本語で文脈を説明",
       "humor_score": 85,  // 0-100: How funny/witty is this? (0 = not funny at all, 100 = hilarious)
       "memorability_score": 90,  // 0-100: How memorable/impactful is this? (0 = forgettable, 100 = unforgettable)
       "category": "witty_remark",  // One of: witty_remark, unexpected_twist, insightful_comment, emotional_moment, hilarious_joke
-      "reasoning": "Why this was selected as a punchline (1-2 sentences)"
+      "reasoning": "Why this was selected as a punchline (1-2 sentences) / 日本語の会話の場合は日本語で選定理由を説明"
     }
   ],
-  "analysis_summary": "Brief overall analysis of the conversation's humor and memorable moments (2-3 sentences)"
+  "analysis_summary": "Brief overall analysis of the conversation's humor and memorable moments (2-3 sentences) / 日本語の会話の場合は日本語で全体分析"
 }
 
 Evaluation criteria:
