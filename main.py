@@ -19,6 +19,9 @@ from supabase_client import SupabaseClient
 # Import LLM provider
 from llm_providers import get_current_llm, CURRENT_PROVIDER, CURRENT_MODEL
 
+# Import Hume processor
+from hume_processor import HumeProcessor, get_emotional_context
+
 app = FastAPI(
     title="PUNCHLINE API",
     description="POC API for extracting memorable punchlines from conversations",
@@ -65,6 +68,9 @@ class WatchMeExtractionRequest(BaseModel):
     local_date: str
     local_time: Optional[str] = None
     user_id: Optional[str] = None
+    use_emotions: bool = False  # Whether to use Hume emotional data
+    emotion_strategy: str = "peaks"  # "peaks", "transitions", or "full_summary"
+    emotion_threshold: float = 0.3  # Minimum emotion score to consider
 
 
 class PunchlineResponse(BaseModel):
@@ -440,9 +446,36 @@ async def extract_from_watchme(request: WatchMeExtractionRequest):
             context_data=context_data
         )
 
+        # Optionally fetch and process Hume emotional data
+        emotional_context = ""
+        if request.use_emotions:
+            print(f"Fetching Hume emotional data for device {request.device_id}")
+            hume_data = await db.get_watchme_emotions(
+                device_id=request.device_id,
+                local_date=request.local_date,
+                local_time=request.local_time
+            )
+
+            if hume_data:
+                processor = HumeProcessor()
+                emotional_summary = processor.create_emotional_summary(
+                    hume_data,
+                    strategy=request.emotion_strategy,
+                    threshold=request.emotion_threshold
+                )
+                emotional_context = processor.format_for_prompt(emotional_summary)
+                print(f"Emotional context generated: {len(emotional_context)} chars")
+            else:
+                print("No Hume data available, proceeding without emotions")
+
         # Pipeline 1: Structure conversation
         print(f"Starting Pipeline 1: Structure conversation for request {request_id}")
-        structured_conversation = await structure_conversation(transcription)
+        if emotional_context:
+            # Include emotional context in the conversation
+            enhanced_transcription = f"{transcription}\n\n[EMOTIONAL CONTEXT]\n{emotional_context}"
+            structured_conversation = await structure_conversation(enhanced_transcription)
+        else:
+            structured_conversation = await structure_conversation(transcription)
 
         # Check for processing errors
         if "processing_error" in structured_conversation:
@@ -484,7 +517,9 @@ async def extract_from_watchme(request: WatchMeExtractionRequest):
             "processing_time_ms": processing_time_ms,
             "model_used": f"{CURRENT_PROVIDER}/{CURRENT_MODEL}",
             "conversation_length": len(transcription),
-            "turn_count": structured_conversation.get('total_turns', 0)
+            "turn_count": structured_conversation.get('total_turns', 0),
+            "emotions_used": request.use_emotions,
+            "emotion_strategy": request.emotion_strategy if request.use_emotions else None
         }
 
         # Save punchline results to database

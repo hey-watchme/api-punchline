@@ -6,10 +6,10 @@ Handles database operations for punchline extraction service.
 
 import os
 import math
+import json
 from typing import Dict, Any, Optional, List
 from supabase import create_client, Client
 from datetime import datetime
-import json
 
 
 class SupabaseClient:
@@ -317,4 +317,61 @@ class SupabaseClient:
 
         except Exception as e:
             print(f"Error fetching WatchMe transcription: {str(e)}")
+            raise e
+
+    async def get_watchme_emotions(
+        self,
+        device_id: str,
+        local_date: str,
+        local_time: Optional[str] = None
+    ) -> Optional[Dict]:
+        """
+        Get Hume emotional data from WatchMe spot_features table
+
+        Args:
+            device_id: Device ID (UUID)
+            local_date: Local date (YYYY-MM-DD)
+            local_time: Optional local time to match specific recording
+
+        Returns:
+            Optional[Dict]: emotion_features_result_hume data or None if not found
+        """
+        try:
+            # Start with base query
+            query = self.client.table('spot_features').select(
+                'emotion_features_result_hume, local_time, recorded_at'
+            ).eq(
+                'device_id', device_id
+            ).eq(
+                'local_date', local_date
+            )
+
+            # Add local_time filter if provided
+            if local_time:
+                query = query.eq('local_time', local_time)
+
+            # Order by recorded_at to get most recent if multiple matches
+            query = query.order('recorded_at', desc=True).limit(1)
+
+            response = query.execute()
+
+            if response.data and len(response.data) > 0:
+                emotion_data = response.data[0].get('emotion_features_result_hume')
+                local_time_found = response.data[0].get('local_time', 'N/A')
+                print(f"Found Hume emotions for device {device_id} on {local_date} at {local_time_found}")
+
+                # Parse JSON string if needed
+                if isinstance(emotion_data, str):
+                    try:
+                        return json.loads(emotion_data)
+                    except json.JSONDecodeError:
+                        print("Warning: Could not parse Hume emotion data as JSON")
+                        return None
+                return emotion_data
+            else:
+                print(f"No Hume emotions found for device {device_id} on {local_date}")
+                return None
+
+        except Exception as e:
+            print(f"Error fetching WatchMe emotions: {str(e)}")
             raise e
