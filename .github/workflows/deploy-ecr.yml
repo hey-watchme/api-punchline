@@ -54,10 +54,10 @@ jobs:
         docker buildx build \
           --platform linux/arm64 \
           --push \
-          -f api/profiler/Dockerfile.prod \
+          -f Dockerfile.prod \
           -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG \
           -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest \
-          api/profiler
+          .
 
         echo "✅ Image pushed to ECR:"
         echo "  - $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG"
@@ -111,8 +111,8 @@ jobs:
     # Step 5: Copy deployment files to EC2
     - name: Copy deployment files to EC2
       run: |
-        scp api/profiler/docker-compose.prod.yml ubuntu@3.24.16.82:/home/ubuntu/punchline-api/
-        scp api/profiler/run-prod.sh ubuntu@3.24.16.82:/home/ubuntu/punchline-api/
+        scp docker-compose.prod.yml ubuntu@3.24.16.82:/home/ubuntu/punchline-api/
+        scp run-prod.sh ubuntu@3.24.16.82:/home/ubuntu/punchline-api/
         ssh ubuntu@3.24.16.82 "chmod +x /home/ubuntu/punchline-api/run-prod.sh"
 
     # Step 6: Create/Update .env file on EC2
