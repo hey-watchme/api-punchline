@@ -141,9 +141,50 @@ POST /extract-from-watchme
 ### 概要
 PUNCHLINEサービスの価値検証のため、WatchMeの既存トランスクリプションデータ（spot_featuresテーブル）を活用できます。新規録音不要で、豊富な実データでテストが可能です。
 
+### データソース
+
+PUNCHLINEは独自のトランスクリプション機能を持たないため、**WatchMeのインフラ（spot_featuresテーブル）** を借りてテストします。
+
+**テストに必要な情報**:
+- **データベース**: WatchMe Supabase `spot_features` テーブル
+- **指定する値**:
+  - `device_id`: デバイスID
+  - `local_date`: 録音日（YYYY-MM-DD）
+  - `local_time`: 録音時刻（YYYY-MM-DD HH:MM:SS.mmm）※オプション
+
+**テストの流れ**:
+1. ユーザーからデータベースの特定レコード（device_id, local_date, local_time）が指定される
+2. その値を使って `/extract-from-watchme` エンドポイントにPOSTリクエスト
+3. APIが自動的にSupabaseから該当する`vibe_transcriber_result`を取得
+4. パンチライン抽出処理を実行
+5. 結果を確認
+
+**重要**: トランスクリプション内容は手動で渡す必要はありません。APIが自動的にデータベースから取得します。
+
 ### テスト方法
 
-1. **基本的なテスト（device_id + local_dateのみ）**
+#### 1. データベースのレコードを指定してテスト（推奨）
+
+指定された`device_id`、`local_date`、`local_time`を使用：
+
+```bash
+# 例: 指定されたデータベースレコードでテスト
+curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
+  -H "Content-Type: application/json" \
+  -d '{
+    "device_id": "5638e419-67d1-457b-8415-29f5f0a4ef98",
+    "local_date": "2026-01-22",
+    "local_time": "2026-01-22 23:17:41.038"
+  }'
+```
+
+**ポイント**:
+- ユーザーから指定された`device_id`、`local_date`、`local_time`を使用
+- APIが自動的にSupabaseから該当する`vibe_transcriber_result`を取得
+- トランスクリプション内容を手動で渡す必要はなし
+
+#### 2. 基本的なテスト（device_id + local_dateのみ）
+
 ```bash
 curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
   -H "Content-Type: application/json" \
@@ -153,7 +194,10 @@ curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
   }'
 ```
 
-2. **特定の録音を指定（local_time付き）**
+**動作**: その日の最新の録音データを自動取得
+
+#### 3. 特定の録音を指定（local_time付き）
+
 ```bash
 curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
   -H "Content-Type: application/json" \
@@ -163,6 +207,8 @@ curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
     "local_time": "2026-01-21 08:57:05.078"
   }'
 ```
+
+**動作**: 指定した時刻の録音データを正確に取得
 
 ### データフロー
 1. spot_featuresテーブルから`vibe_transcriber_result`を取得
