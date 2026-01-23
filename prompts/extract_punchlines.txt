@@ -1,63 +1,34 @@
-You are an expert at identifying memorable, funny, and impactful quotes from conversations.
+# 役割: カリスマ・コンテンツエディター
+構造化された会話から、SNSで爆発的なインパクトを与え、話者の「知性・感性・人間性」を証明する最強のパンチラインを5つ抽出してください。
 
-Structured conversation:
-{structured_conversation}
+# パンチラインの定義
+- **Deep (深い)**: 核心を突いた哲学的な一言
+- **Sharp (鋭い)**: 既存の概念を壊すような新しい視点
+- **Authentic (真実味)**: 飾らない言葉で出た、本音の重み
+- **Witty (機知)**: 言葉遊びや、絶妙な例え話
 
-Your task is to extract the most memorable "punchlines" from this conversation. A punchline can be:
-- A witty or humorous remark
-- An unexpected or surprising statement
-- A profound or insightful comment
-- An emotional or touching moment
-- A clever play on words or joke
-- A memorable quote that stands out
+# 評価基準
+1. **Status Score (0-100)**: これを公開した際、話者の「思考の深さ」や「魅力」がどれだけ伝わるか。
+2. **Shareability (0-100)**: 短い動画として切り取った時、文脈を知らない他人の心をも動かすか。
 
-Please analyze the conversation and extract the TOP 5 punchlines, providing the following information for each:
-
-IMPORTANT: For Japanese conversations, provide "context_before" and "reasoning" in Japanese. Keep field names in English.
-
+# 出力形式 (JSON)
 {
   "punchlines": [
     {
       "rank": 1,
-      "text": "The exact quote/punchline (in original language)",
-      "speaker": "Speaker A",
-      "context_before": "Brief context leading to this punchline (1-2 sentences) / 日本語の会話の場合は日本語で文脈を説明",
-      "humor_score": 85,  // 0-100: How funny/witty is this? (0 = not funny at all, 100 = hilarious)
-      "memorability_score": 90,  // 0-100: How memorable/impactful is this? (0 = forgettable, 100 = unforgettable)
-      "category": "witty_remark",  // One of: witty_remark, unexpected_twist, insightful_comment, emotional_moment, hilarious_joke
-      "reasoning": "Why this was selected as a punchline (1-2 sentences) / 日本語の会話の場合は日本語で選定理由を説明"
+      "text": "抽出されたパンチラインの原文（一切改変不可）",
+      "speaker": "話者名",
+      "category": "Deep / Sharp / Authentic / Witty から選択",
+      "status_score": 95,
+      "shareability": 88,
+      "context_before": "その言葉が放たれる直前の空気感を1分以内のショート動画の導入として記述",
+      "reasoning": "なぜこれが『宝石』なのか。言葉の裏にある哲学を解説"
     }
   ],
-  "analysis_summary": "Brief overall analysis of the conversation's humor and memorable moments (2-3 sentences) / 日本語の会話の場合は日本語で全体分析"
+  "analysis_summary": "この会話全体から漂う、話者の人間的魅力についての総評"
 }
 
-Evaluation criteria:
-1. **Humor Score (0-100)**:
-   - 0-20: Not funny at all, serious statement
-   - 21-40: Slightly amusing, mild humor
-   - 41-60: Moderately funny, good humor
-   - 61-80: Very funny, great wit
-   - 81-100: Hilarious, exceptional humor
+# 入力データ
+{structured_conversation}
 
-2. **Memorability Score (0-100)**:
-   - 0-20: Completely forgettable
-   - 21-40: Somewhat memorable
-   - 41-60: Moderately memorable
-   - 61-80: Very memorable
-   - 81-100: Extremely memorable, quotable
-
-3. **Categories**:
-   - witty_remark: Quick, clever responses or observations
-   - unexpected_twist: Surprising turns in the conversation
-   - insightful_comment: Deep, thoughtful observations
-   - emotional_moment: Touching or powerful emotional expressions
-   - hilarious_joke: Obvious jokes or humorous stories
-
-Selection guidelines:
-- Prioritize genuinely funny or impactful moments
-- Consider both humor and memorability (weighted: Humor × 0.6 + Memorability × 0.4)
-- Ensure variety in categories if possible
-- Extract exact quotes, not paraphrases
-- Provide enough context for understanding
-
-Return ONLY the JSON object, no additional text or explanations.
+JSONのみを出力してください。説明文は不要です。
