@@ -79,8 +79,8 @@ class PunchlineResponse(BaseModel):
     text: str
     speaker: str
     context_before: str
-    humor_score: int
-    memorability_score: int
+    status_score: int
+    shareability: int
     category: str
     reasoning: str
 
