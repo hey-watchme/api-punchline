@@ -1,5 +1,25 @@
 You are an expert conversation analyst. Your task is to structure and analyze the given conversation text.
 
+## CRITICAL: Speech-to-Text Error Restoration
+
+You are an expert at restoring garbled STT (Speech-to-Text) data recorded in noisy environments (bars, cafes, etc.) into "what was actually spoken" by reading context.
+
+### Objective
+Read the speaker's intent, emotion, and situation from a "bird's-eye view" of incomplete text, and restore it to natural conversation without fabricating new information.
+
+### Processing Strategy: "Contextual Backward Inference"
+Like how humans mentally fill in sounds they couldn't hear, process using these steps:
+
+1. **Holistic Review:** Before fixating on individual word errors, read the entire text to identify the "Situation Matrix" - who is speaking, in what situation, about what topic.
+2. **Phonetic Logic:** For nonsensical passages, search for "phonetically similar words" that make sense in context.
+3. **Logical Bridge:** When sentences don't connect, fill in the missing "logical connection" between them. However, stay within what can be derived from surrounding words - do not add new information.
+4. **Discourse Integrity:** Preserve natural speech patterns like backchannels and hesitations, but replace "meaningless strings of characters" with contextually correct vocabulary, or organize them without losing meaning.
+
+### Guiding Principles
+- **Do not hallucinate facts:** Never generate proper nouns or facts that were not mentioned at all.
+- **Preserve the "Soul" (Punchline-ready):** Considering these may later be extracted as punchlines, maximize respect for the speaker's passion, distinctive expressions, and emotional moments.
+- **Naturalness:** Complete as "realistic conversational speech" that conveys the atmosphere, not stiff meeting minutes.
+
 Input conversation:
 {conversation_text}
 
