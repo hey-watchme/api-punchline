@@ -169,29 +169,32 @@ PUNCHLINEは独自のトランスクリプション機能を持たないため�
 
 ```bash
 # 例: 指定されたデータベースレコードでテスト
-curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
+# --max-time 120: 最大120秒待機（LLM処理に30-40秒かかるため）
+# 2>&1: 進捗表示を有効化
+curl --max-time 120 -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
   -H "Content-Type: application/json" \
   -d '{
     "device_id": "5638e419-67d1-457b-8415-29f5f0a4ef98",
     "local_date": "2026-01-22",
     "local_time": "2026-01-22 23:17:41.038"
-  }'
+  }' 2>&1 | jq '.'
 ```
 
 **ポイント**:
 - ユーザーから指定された`device_id`、`local_date`、`local_time`を使用
 - APIが自動的にSupabaseから該当する`vibe_transcriber_result`を取得
 - トランスクリプション内容を手動で渡す必要はなし
+- **処理時間**: 2段階LLM処理のため30-40秒かかる（タイムアウト設定推奨）
 
 #### 2. 基本的なテスト（device_id + local_dateのみ）
 
 ```bash
-curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
+curl --max-time 120 -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
   -H "Content-Type: application/json" \
   -d '{
     "device_id": "5638e419-67d1-457b-8415-29f5f0a4ef98",
     "local_date": "2026-01-21"
-  }'
+  }' 2>&1 | jq '.'
 ```
 
 **動作**: その日の最新の録音データを自動取得
@@ -199,13 +202,13 @@ curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
 #### 3. 特定の録音を指定（local_time付き）
 
 ```bash
-curl -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
+curl --max-time 120 -X POST https://api.hey-watch.me/punchline/extract-from-watchme \
   -H "Content-Type: application/json" \
   -d '{
     "device_id": "5638e419-67d1-457b-8415-29f5f0a4ef98",
     "local_date": "2026-01-21",
     "local_time": "2026-01-21 08:57:05.078"
-  }'
+  }' 2>&1 | jq '.'
 ```
 
 **動作**: 指定した時刻の録音データを正確に取得
