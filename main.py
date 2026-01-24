@@ -83,6 +83,8 @@ class PunchlineResponse(BaseModel):
     shareability: int
     category: str
     reasoning: str
+    tags: Optional[List[str]] = []
+    panel_reactions: Optional[Dict[str, str]] = {}
 
 
 class ExtractionResponse(BaseModel):
