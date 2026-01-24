@@ -379,6 +379,56 @@ LLM_PRESET=gpt-4.1
 - `emotional_moment`: 感動的瞬間
 - `hilarious_joke`: 爆笑ジョーク
 
+## プロンプト管理
+
+### プロンプトファイルの場所
+
+プロンプトは以下のディレクトリに格納されています：
+
+```
+/Users/kaya.matsumoto/projects/PUNCHLINE/api/profiler/prompts/
+├── structure_conversation.txt  # Pipeline 1: 会話構造化プロンプト
+└── extract_punchlines.txt       # Pipeline 2: パンチライン抽出プロンプト
+```
+
+### ⚠️ 重要：プロンプト変更時の必須作業
+
+**プロンプトでJSONフィールドを追加/変更する場合は、必ず2箇所を更新してください：**
+
+#### 問題の本質
+
+プロンプトで新しいフィールドを定義しても、`main.py`のPydanticモデルに定義されていないと、**LLMが生成したデータがバリデーションで自動的に捨てられます**。
+
+#### 修正が必要な2箇所
+
+1. **プロンプトファイル** (`prompts/extract_punchlines.txt`)
+   - LLMに出力させるJSON構造を定義
+
+2. **Pydanticモデル** (`main.py` の `PunchlineResponse` クラス)
+   - APIが受け取るデータ構造を定義
+
+#### 例：新フィールド追加時
+
+```python
+# main.py の PunchlineResponse クラスに追加
+class PunchlineResponse(BaseModel):
+    rank: int
+    text: str
+    speaker: str
+    # ... 既存フィールド ...
+    new_field: Optional[str] = None  # ← 新しいフィールドを追加
+```
+
+#### チェックリスト
+
+プロンプト変更時：
+- [ ] プロンプトファイルを編集
+- [ ] `main.py`のPydanticモデルを更新
+- [ ] 両方をGitHubにプッシュ
+- [ ] デプロイ後にテスト実行
+
+---
+
 ## トラブルシューティング
 
 ### ローカルテストの制限事項
